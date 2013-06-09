@@ -5,6 +5,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.imageio.ImageIO;
 import javax.swing.*; 
@@ -17,12 +18,20 @@ class AppFrame extends JFrame {
 	public AppFrame(String title) {
 	super(title);
 	setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setResizable(false); //nicht veraenderbar
+    //setUndecorated(true);
+    //this.setAlwaysOnTop(true);
+    //this.setIgnoreRepaint(true);
+    Image icon = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB_PRE);
+    setIconImage(icon);//entfernt das haessliche Java Icon
     } 
 }
 
 class ImagePanel extends JPanel {  
 	
 	private static final long serialVersionUID = 2L;
+	
+	private int current_round;
 	
 	private String filename;
 	private int w,h;
@@ -62,18 +71,48 @@ class ImagePanel extends JPanel {
     	this.repaint();
     }
     
+    public void save() {
+    	JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));  
+    	int returnVal = fileChooser.showSaveDialog(null); 
+    	if(returnVal == JFileChooser.APPROVE_OPTION){  
+    	if(fileChooser.getSelectedFile()!=null){  
+    	File theFileToSave = fileChooser.getSelectedFile();
+    	String typ = "png";
+    	try {
+			ImageIO.write( current, typ, theFileToSave );
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Konnte nicht speichern.");
+		}
+    	
+    	}}
+    	/*
+    	String typ = "png";
+    	File datei = new File( "output.".concat(typ) );
+    	try {
+			ImageIO.write( current, typ, datei );
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Konnte nicht speichern.");
+		}*/
+    }
+    
     protected void createAutomat() {
     	this.current = new BufferedImage(dim, dim ,BufferedImage.TYPE_INT_RGB);
     	int width = this.image.getWidth();
     	int height = this.image.getHeight();
     	w = dim;
     	h  = dim;
+    	current_round = 0;
     	
-    	for (int i = 0; i< dim; i++) {
+    	Graphics2D g = current.createGraphics();
+    	g.setColor( Color.WHITE);
+    	g.fillRect(0,0,dim,dim);
+    	/*for (int i = 0; i< dim; i++) {
     		for (int j = 0; j< dim; j++) {
     			current.setRGB(i,j, Color.WHITE.getRGB());
     		}
-    	}
+    	}*/
     	
     	int x=(dim/2)-32;
     	int y=(dim/2)-32;
@@ -87,8 +126,11 @@ class ImagePanel extends JPanel {
     
     protected void paintComponent(Graphics g) { 
 		super.paintComponent(g);
+		g.setColor(Color.LIGHT_GRAY);
+		g.setFont(new Font("SansSerif",Font.PLAIN,18));
 		if (this.current != null) {
 			g.drawImage(this.current, 0, 0, w, h, null);
+			g.drawString("Aktuelle Runde: " + Integer.toString(this.current_round), 10,20);
 		}
 		else if (this.image != null) {
 			g.drawImage(this.image, 0, 0, w, h, null);
@@ -101,6 +143,7 @@ class ImagePanel extends JPanel {
     	int[] di = { 1, -1, 0, 0, 1, -1, 1, -1 };
     	int[] dj = { 0, 0, 1, -1, 1, -1, -1, 1 };
     	for (int r = 0; r < rounds; r++) {
+    		this.current_round++;
     		this.last = this.current;
     		this.current = new BufferedImage(dim, dim ,BufferedImage.TYPE_INT_RGB);
         	for (int i = 0; i< dim; i++) {
@@ -193,7 +236,7 @@ public class smile32
     	return;
     }
     
-    JFrame frame = new AppFrame("Output Smile32"); 
+    JFrame frame = new AppFrame("Output Smile32");
 	JPanel panel = new JPanel(new BorderLayout());
 	frame.add(panel);
 	
@@ -217,8 +260,10 @@ public class smile32
 	JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 	JButton exit = new JButton("Exit");
 	JButton reset = new JButton("Reset");
-	footer.add(reset, BorderLayout.PAGE_END);
-	footer.add(exit, BorderLayout.PAGE_END);
+	JButton save = new JButton("Save");
+	footer.add(save);
+	footer.add(reset);
+	footer.add(exit);
 	panel.add(footer, BorderLayout.PAGE_END);
 	
 	
@@ -229,6 +274,7 @@ public class smile32
 	start.addActionListener(new ActionListener() {
 		   public void actionPerformed(ActionEvent arg0) {
 		    imagePanel.start(Integer.parseInt(input.getText())).repaint();
+		    //Toolkit.getDefaultToolkit().beep();
 		   }
 		  });
 	
@@ -238,6 +284,13 @@ public class smile32
 		   }
 		  });
 	
+	save.addActionListener(new ActionListener() {
+		   public void actionPerformed(ActionEvent arg0) {
+		    imagePanel.save();
+		   }
+		  });
+	
+
 	
 	frame.pack();
 	frame.setVisible(true);
