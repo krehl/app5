@@ -308,12 +308,15 @@ public class smile32
 	//label.addMouseListener(m); 
 	exit.addMouseListener(m);
 	
-	start.addActionListener(new ActionListener() {
+	ActionListener inputAndButton = new ActionListener() {
 		   public void actionPerformed(ActionEvent arg0) {
-		    imagePanel.start(Integer.parseInt(input.getText()));
-		    //Toolkit.getDefaultToolkit().beep();
-		   }
-		  });
+			    imagePanel.start(Integer.parseInt(input.getText()));
+			    //Toolkit.getDefaultToolkit().beep();
+			   }
+			  };
+	
+	start.addActionListener(inputAndButton);
+	input.addActionListener(inputAndButton);
 	
 	reset.addActionListener(new ActionListener() {
 		   public void actionPerformed(ActionEvent arg0) {
