@@ -128,8 +128,8 @@ class ImagePanel extends JPanel {
     		}
     	}*/
     	
-    	int x=(dim/2)-32;
-    	int y=(dim/2)-32;
+    	int x=(dim/2)-(width/2);
+    	int y=(dim/2)-(height/2);
     	for (int i = 0; i< width; i++) {
     		for (int j = 0; j< height; j++) {
     			current.setRGB(x+i,y+j, image.getRGB(i, j));
