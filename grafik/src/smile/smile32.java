@@ -6,10 +6,13 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.imageio.ImageIO;
 import javax.swing.*; 
 
+import sun.awt.Mutex;
 
 class AppFrame extends JFrame { 
 
@@ -32,11 +35,16 @@ class ImagePanel extends JPanel {
 	private static final long serialVersionUID = 2L;
 	
 	private int current_round;
-	
+	private int rounds;
 	private String filename;
 	private int w,h;
 	private BufferedImage original;
 	private BufferedImage image;
+	
+	private boolean draw = true;
+	
+	final Lock lock = new ReentrantLock();
+	private Mutex running;
 	
 	private int dim;
 	
@@ -69,6 +77,12 @@ class ImagePanel extends JPanel {
     public void reset() {
     	this.createAutomat();
     	this.repaint();
+    }
+    
+    public void drawing(int state) {
+    	if (state == 1) { draw = true; return; }
+    	else {draw = false;}
+    	return;
     }
     
     public void save() {
@@ -124,7 +138,7 @@ class ImagePanel extends JPanel {
     	return;
     }
     
-    protected void paintComponent(Graphics g) { 
+    protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		g.setColor(Color.LIGHT_GRAY);
 		g.setFont(new Font("SansSerif",Font.PLAIN,18));
@@ -137,38 +151,55 @@ class ImagePanel extends JPanel {
 		} else {
 			g.drawString("Kein Bild vorhanden",10,20 );
 		}
+	
+    }
+    
+    class runner extends Thread {
+    	@Override public void run() {
+    		lock.lock();
+        	int[] di = { 1, -1, 0, 0, 1, -1, 1, -1 };
+        	int[] dj = { 0, 0, 1, -1, 1, -1, -1, 1 };
+        	for (int r = 0; r < rounds; r++) {
+        		current_round++;
+        		last = current;
+        		BufferedImage next = new BufferedImage(dim, dim ,BufferedImage.TYPE_INT_RGB);
+            	for (int i = 0; i< dim; i++) {
+            		for (int j = 0; j< dim; j++) {
+            			int value = 0;
+            			Color lastrgb;
+            			for (int k=0; k<8; k++) {
+            				int ww = (i+di[k])%dim;
+            				int hh = (j+dj[k])%dim;
+            				if (ww < 0) ww += dim; // falls das Ergebnis negativ ist
+            				if (hh < 0) hh += dim;
+            				lastrgb = new Color(last.getRGB(ww, hh));
+            				if (lastrgb.equals(Color.BLACK)) {
+            					value++;
+            				} 
+            			}
+            			if (value % 2 == 0) {
+            				next.setRGB(i,j, Color.WHITE.getRGB());
+            			} else {
+            				next.setRGB(i,j, Color.BLACK.getRGB());
+            			}
+            			
+            		}
+            	}
+        	current = next;
+        	if (draw) {
+        		repaint();
+        		}
+        	}
+        	rounds = 0;
+        	repaint();
+        	lock.unlock();
+    	}
     }
     
     public ImagePanel start(int rounds) {
-    	int[] di = { 1, -1, 0, 0, 1, -1, 1, -1 };
-    	int[] dj = { 0, 0, 1, -1, 1, -1, -1, 1 };
-    	for (int r = 0; r < rounds; r++) {
-    		this.current_round++;
-    		this.last = this.current;
-    		this.current = new BufferedImage(dim, dim ,BufferedImage.TYPE_INT_RGB);
-        	for (int i = 0; i< dim; i++) {
-        		for (int j = 0; j< dim; j++) {
-        			int value = 0;
-        			Color lastrgb;
-        			for (int k=0; k<8; k++) {
-        				int ww = (i+di[k])%dim;
-        				int hh = (j+dj[k])%dim;
-        				if (ww < 0) ww += dim; // falls das Ergebnis negativ ist
-        				if (hh < 0) hh += dim;
-        				lastrgb = new Color(last.getRGB(ww, hh));
-        				if (lastrgb.equals(Color.BLACK)) {
-        					value++;
-        				} 
-        			}
-        			if (value % 2 == 0) {
-        				current.setRGB(i,j, Color.WHITE.getRGB());
-        			} else {
-        				current.setRGB(i,j, Color.BLACK.getRGB());
-        			}
-        			
-        		}
-        	}
-    	}
+    	this.rounds = rounds;
+    	Thread t = new runner();
+    	t.start();
     	return this;
     }
     
@@ -226,6 +257,8 @@ class AppMouseAdapter extends MouseAdapter {
 
 public class smile32
 { 
+	final static int DIMENSION = 400;
+	
 	private static ImagePanel imagePanel;
 	
     public static void main( String[] args ) 
@@ -246,14 +279,17 @@ public class smile32
 		final JTextField input = new JTextField("0");
 		input.setColumns(7);
 		JButton start = new JButton("Start");
+		JCheckBox shouldDraw = new JCheckBox("Draw ?");
+		shouldDraw.setSelected(true);
 		
 		navigation.add(label);
 		navigation.add(input);
 		navigation.add(start);
+		navigation.add(shouldDraw);
 	
 	panel.add(navigation, BorderLayout.PAGE_START);
 	
-    imagePanel = new ImagePanel(args[0],800);
+    imagePanel = new ImagePanel(args[0],DIMENSION);
 	panel.add(imagePanel, BorderLayout.CENTER);
 	
 	
@@ -273,7 +309,7 @@ public class smile32
 	
 	start.addActionListener(new ActionListener() {
 		   public void actionPerformed(ActionEvent arg0) {
-		    imagePanel.start(Integer.parseInt(input.getText())).repaint();
+		    imagePanel.start(Integer.parseInt(input.getText()));
 		    //Toolkit.getDefaultToolkit().beep();
 		   }
 		  });
@@ -290,7 +326,13 @@ public class smile32
 		   }
 		  });
 	
+	shouldDraw.addItemListener(new ItemListener() {
 
+	    public void itemStateChanged(ItemEvent e) {
+	    	imagePanel.drawing(e.getStateChange());
+	        System.err.println(e.getStateChange());
+	    }
+	});
 	
 	frame.pack();
 	frame.setVisible(true);
