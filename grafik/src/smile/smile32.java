@@ -198,8 +198,9 @@ class ImagePanel extends JPanel {
     
     public ImagePanel start(int rounds) {
     	this.rounds = rounds;
-    	Thread t = new runner();
-    	t.start();
+    	//Thread t = new runner();
+    	//t.start();
+    	(new runner()).start();
     	return this;
     }
     
@@ -257,7 +258,7 @@ class AppMouseAdapter extends MouseAdapter {
 
 public class smile32
 { 
-	final static int DIMENSION = 400;
+	final static int DIMENSION = 600;
 	
 	private static ImagePanel imagePanel;
 	
