@@ -5,14 +5,11 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.imageio.ImageIO;
-import javax.swing.*; 
-
-import sun.awt.Mutex;
+import javax.swing.*;
 
 class AppFrame extends JFrame { 
 
@@ -44,8 +41,6 @@ class ImagePanel extends JPanel {
 	private boolean draw = true;
 	
 	final Lock lock = new ReentrantLock();
-	private Mutex running;
-	
 	private int dim;
 	
 	private BufferedImage current, last;

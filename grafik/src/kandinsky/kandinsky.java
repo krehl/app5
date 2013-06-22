@@ -1,4 +1,4 @@
-package kadinsky;
+package kandinsky;
 
 import java.awt.*; 
 import java.awt.event.*; 
